@@ -273,11 +273,20 @@ def action_tongue():
 
 def action_change_bg():
     global background_color
-    background_color = (
-        random.randint(0, 255),
-        random.randint(0, 255),
-        random.randint(0, 255)
-    )
+    # Use a palette of dark colors to avoid flashing bright lights
+    dark_colors = [
+        (0, 60, 0),      # Dark Green
+        (60, 0, 0),      # Dark Red
+        (0, 0, 60),      # Dark Blue
+        (60, 0, 60),     # Dark Purple
+        (0, 60, 60),     # Dark Teal
+        (60, 60, 0),     # Dark Olive
+        (80, 20, 50),    # Dark Pink
+        (30, 30, 30),    # Dark Grey
+        (20, 40, 60),    # Dark Slate
+        (40, 20, 0),     # Dark Brown
+    ]
+    background_color = random.choice(dark_colors)
 
 
 def action_add_shape():
