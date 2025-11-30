@@ -44,6 +44,7 @@ class Cat:
         self.is_blinking = False
         self.mouth_state = 'normal'
         self.mouth_timer = 0
+        self.is_crouching = False
 
     def update(self):
         # Jumping logic
@@ -103,6 +104,12 @@ class Cat:
         self.mouth_state = 'tongue'
         self.mouth_timer = 60
 
+    def crouch(self):
+        self.is_crouching = True
+
+    def stand(self):
+        self.is_crouching = False
+
     def wave(self):
         self.is_waving = True
 
@@ -122,6 +129,14 @@ class Cat:
         
         cx, cy = int(self.x), int(self.y)
 
+        # Adjust dimensions for crouching
+        if self.is_crouching:
+            body_rect = (cx - s(110), cy + s(40), s(220), s(110))
+            head_cy = cy + s(10)
+        else:
+            body_rect = (cx - s(100), cy, s(200), s(150))
+            head_cy = cy - s(60)
+
         # Tail
         # slight jitter
         tail_end_x = cx + s(120) + s(30) * random.choice([-1, 1]) * 0.1
@@ -132,10 +147,10 @@ class Cat:
         )
 
         # Body
-        pygame.draw.ellipse(surface, GRAY, (cx - s(100), cy, s(200), s(150)))
+        pygame.draw.ellipse(surface, GRAY, body_rect)
 
         # Head (Moved down to connect with body)
-        head_y = cy - s(60)
+        head_y = head_cy
         pygame.draw.circle(surface, GRAY, (cx, head_y), s(70))
 
         # Ears
@@ -346,8 +361,18 @@ actions = [
 
 # Generate a mapping for many keys
 key_mapping = {}
+# Define reserved keys to exclude from random mapping
+reserved_keys = [
+    pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN,
+    pygame.K_SPACE,
+    ord('a'), ord('d'), ord('w'), ord('s'),
+    ord('A'), ord('D'), ord('W'), ord('S')
+]
+
 # Alphanumeric keys
 for key_code in range(32, 127):  # ASCII printable
+    if key_code in reserved_keys:
+        continue
     try:
         key_mapping[key_code] = random.choice(actions)
     except Exception:
@@ -370,16 +395,37 @@ while running:
                keys[pygame.K_e] and keys[pygame.K_x]:
                 running = False
 
+            # Jump action (Space, Up, W)
+            if event.key in [pygame.K_SPACE, pygame.K_UP, pygame.K_w]:
+                cat.jump()
+
             # Execute action mapped to key
             if event.key < 128 and event.key in key_mapping:
                 key_mapping[event.key]()
-            else:
+            elif event.key not in reserved_keys and event.key < 128:
                 # Fallback for special keys or unmapped
                 random.choice(actions)()
 
             # Stop waving if not pressing wave key (simulated)
             if event.key != pygame.K_w:
                 cat.stop_wave()
+
+    # Continuous key checks for movement and crouching
+    keys = pygame.key.get_pressed()
+    
+    # Left (Left Arrow, A)
+    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        cat.target_x -= 10
+    
+    # Right (Right Arrow, D)
+    if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        cat.target_x += 10
+
+    # Crouch (Down Arrow, S)
+    if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+        cat.crouch()
+    else:
+        cat.stand()
 
     # Update
     cat.update()
