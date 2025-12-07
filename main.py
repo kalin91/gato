@@ -12,15 +12,20 @@ try:
     sizes = pygame.display.get_desktop_sizes()
     # Assume horizontal layout: sum widths, max height
     SCREEN_WIDTH = sum(w for w, h in sizes)
-    SCREEN_HEIGHT = max(h for w, h in sizes)
+    # Subtract a margin for the taskbar (approx 50px) so the window doesn't go behind it
+    SCREEN_HEIGHT = max(h for w, h in sizes) - 50
+
     # Position window at top-left of the first monitor
     os.environ['SDL_VIDEO_WINDOW_POS'] = "0,0"
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
+
 except (AttributeError, pygame.error):
     # Fallback for older pygame or errors
     info = pygame.display.Info()
-    SCREEN_WIDTH, SCREEN_HEIGHT = info.current_w, info.current_h
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+    SCREEN_WIDTH = info.current_w
+    SCREEN_HEIGHT = info.current_h - 50  # Apply margin here too
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "0,0"
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
 
 pygame.display.set_caption("Gato Interactivo")
 
