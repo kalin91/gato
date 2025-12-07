@@ -1,15 +1,42 @@
 import pygame
 import random
 import sys
+import os
 
 # Initialize Pygame
 pygame.init()
 
 # Screen setup
-info = pygame.display.Info()
-SCREEN_WIDTH, SCREEN_HEIGHT = info.current_w, info.current_h
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+# Try to detect multiple monitors and span across them
+try:
+    sizes = pygame.display.get_desktop_sizes()
+    # Assume horizontal layout: sum widths, max height
+    SCREEN_WIDTH = sum(w for w, h in sizes)
+    SCREEN_HEIGHT = max(h for w, h in sizes)
+    # Position window at top-left of the first monitor
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "0,0"
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
+except (AttributeError, pygame.error):
+    # Fallback for older pygame or errors
+    info = pygame.display.Info()
+    SCREEN_WIDTH, SCREEN_HEIGHT = info.current_w, info.current_h
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+
 pygame.display.set_caption("Gato Interactivo")
+
+# Load Sounds
+try:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    assets_dir = os.path.join(base_dir, "assets")
+    
+    sound_meow = pygame.mixer.Sound(os.path.join(assets_dir, "Meow.ogg"))
+    sound_tongue = pygame.mixer.Sound(os.path.join(assets_dir, "BounceYoFrankie.flac"))
+    sound_jump = pygame.mixer.Sound(os.path.join(assets_dir, "qubodup-cfork-ccby3-jump.ogg"))
+except Exception as e:
+    print(f"Warning: Could not load sounds: {e}")
+    sound_meow = None
+    sound_tongue = None
+    sound_jump = None
 
 # Colors
 WHITE = (255, 255, 255)
@@ -95,6 +122,8 @@ class Cat:
         if not self.is_jumping:
             self.is_jumping = True
             self.y_velocity = -20
+            if sound_jump:
+                sound_jump.play()
 
     def open_mouth(self):
         self.mouth_state = 'open'
@@ -280,10 +309,14 @@ def action_meow():
     global show_meow
     show_meow = 60  # frames
     cat.open_mouth()
+    if sound_meow:
+        sound_meow.play()
 
 
 def action_tongue():
     cat.stick_tongue_out()
+    if sound_tongue:
+        sound_tongue.play()
 
 
 def action_change_bg():
