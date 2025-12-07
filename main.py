@@ -118,6 +118,25 @@ class Cat:
         elif self.x > self.target_x:
             self.x -= 5
 
+        # Clamp position to keep cat just within "fully offscreen" limits
+        # Body width is roughly s(100) to left and right, but tail extends further
+        # s(100) with scale 2.0 is 200. Tail is s(120) + jitter.
+        # We use s(200) to be safe and ensure it's completely hidden.
+        limit_padding = int(200 * self.scale)
+        min_x = -limit_padding
+        max_x = SCREEN_WIDTH + limit_padding
+
+        if self.x < min_x:
+            self.x = min_x
+            # Also clamp target so we can return immediately
+            if self.target_x < min_x:
+                self.target_x = min_x
+        elif self.x > max_x:
+            self.x = max_x
+            # Also clamp target so we can return immediately
+            if self.target_x > max_x:
+                self.target_x = max_x
+
     def jump(self):
         if not self.is_jumping:
             self.is_jumping = True
