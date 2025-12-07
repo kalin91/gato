@@ -48,8 +48,72 @@ PINK = (255, 192, 203)
 # Global state
 background_color = (30, 30, 30)
 background_shapes = []
+particles = []
+fishes = []
 show_meow = 0
 ball_pos = None
+
+
+class Particle:
+    def __init__(self, x, y, color, velocity, lifetime):
+        self.x = x
+        self.y = y
+        self.color = color
+        self.vx, self.vy = velocity
+        self.lifetime = lifetime
+        self.original_lifetime = lifetime
+
+    def update(self):
+        self.x += self.vx
+        self.y += self.vy
+        self.lifetime -= 1
+
+    def draw(self, surface):
+        if self.lifetime > 0:
+            radius = int(5 * (self.lifetime / self.original_lifetime))
+            if radius > 0:
+                pygame.draw.circle(
+                    surface, self.color, (int(self.x), int(self.y)), radius
+                )
+
+
+class Fish:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.vy = 0
+        self.vx = random.uniform(-2, 2)
+        self.on_ground = False
+        self.color = (100, 150, 200)
+
+    def update(self):
+        if not self.on_ground:
+            self.vy += 0.5  # Gravity
+            self.y += self.vy
+            self.x += self.vx
+
+            if self.y > SCREEN_HEIGHT - 20:
+                self.y = SCREEN_HEIGHT - 20
+                self.vy = -self.vy * 0.5  # Bounce
+                if abs(self.vy) < 1:
+                    self.on_ground = True
+                    self.vy = 0
+                    self.vx = 0
+
+    def draw(self, surface):
+        cx, cy = int(self.x), int(self.y)
+        # Body
+        pygame.draw.ellipse(surface, self.color, (cx - 15, cy - 10, 30, 20))
+        # Tail
+        pygame.draw.polygon(surface, self.color, [
+            (cx - 15, cy),
+            (cx - 25, cy - 10),
+            (cx - 25, cy + 10)
+        ])
+        # Eye
+        pygame.draw.circle(surface, WHITE, (cx + 5, cy - 3), 3)
+        pygame.draw.circle(surface, BLACK, (cx + 6, cy - 3), 1)
+
 
 class Cat:
     def __init__(self, x, y, scale=1.0):
@@ -435,10 +499,30 @@ font = pygame.font.SysFont(None, 72)
 
 running = True
 while running:
+    # Mouse position for fairy dust
+    mx, my = pygame.mouse.get_pos()
+    # Add dust (Light Blue / Cyan)
+    particles.append(Particle(
+        mx, my, (173, 216, 230),
+        (random.uniform(-1, 1), random.uniform(-1, 1)), 30
+    ))
+
     # Event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left click - Fish
+                fishes.append(Fish(event.pos[0], event.pos[1]))
+            elif event.button == 3:  # Right click - Explosion
+                for _ in range(20):
+                    color = random.choice([
+                        (255, 0, 255), (0, 255, 255), (255, 255, 0)
+                    ])
+                    vel = (random.uniform(-5, 5), random.uniform(-5, 5))
+                    particles.append(Particle(
+                        event.pos[0], event.pos[1], color, vel, 60
+                    ))
         elif event.type == pygame.KEYDOWN:
             # Check for exit combo: Ctrl + Alt + E + X
             keys = pygame.key.get_pressed()
@@ -484,6 +568,16 @@ while running:
     if show_meow > 0:
         show_meow -= 1
 
+    # Update particles
+    for p in particles[:]:
+        p.update()
+        if p.lifetime <= 0:
+            particles.remove(p)
+
+    # Update fishes
+    for f in fishes[:]:
+        f.update()
+
     if ball_pos:
         if abs(cat.x - ball_pos[0]) < 10:
             ball_pos = None  # Caught it
@@ -503,6 +597,14 @@ while running:
                 screen, shape['color'],
                 (shape['x'], shape['y'], shape['size'], shape['size'])
             )
+
+    # Draw particles
+    for p in particles:
+        p.draw(screen)
+
+    # Draw fishes
+    for f in fishes:
+        f.draw(screen)
 
     # Draw ball if exists
     if ball_pos:
